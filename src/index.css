@@ -222,6 +222,10 @@ body {
   display: flex;
 }
 
+.input-wrap .cyber-input {
+  padding-left: 40px;
+}
+
 .cyber-input {
   width: 100%;
   background: rgba(0, 212, 255, 0.03);
