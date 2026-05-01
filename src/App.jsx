@@ -76,7 +76,7 @@ export default function App() {
     if (currentPage === "login") return;
 
     // Connect to a public MQTT broker for cross-device alerts
-    mqttClient = mqtt.connect("wss://broker.emqx.io:8083/mqtt");
+    mqttClient = mqtt.connect("wss://broker.emqx.io:8084/mqtt");
 
     mqttClient.on("connect", () => {
       console.log("Connected to MQTT Broker");
@@ -138,7 +138,7 @@ export default function App() {
       }));
     } else {
       // Fallback: connect temporarily to publish if the main client isn't ready
-      const tempClient = mqtt.connect("wss://broker.emqx.io:8083/mqtt");
+      const tempClient = mqtt.connect("wss://broker.emqx.io:8084/mqtt");
       tempClient.on("connect", () => {
         tempClient.publish("guardian-app-sos-alerts-dev", JSON.stringify({
           type: "EMERGENCY_ALERT",
