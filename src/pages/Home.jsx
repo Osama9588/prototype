@@ -14,21 +14,9 @@ const features = [
     label: "Voice Trigger",
     color: "#00d4ff",
     status: "STANDBY",
-    page: null,
+    page: "voice",
   },
-  {
-    id: "shake",
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
-        <line x1="12" y1="18" x2="12.01" y2="18" />
-      </svg>
-    ),
-    label: "Shake Alert",
-    color: "#f59e0b",
-    status: "ACTIVE",
-    page: null,
-  },
+
   {
     id: "contacts",
     icon: (
@@ -54,7 +42,7 @@ const features = [
     label: "Live Location",
     color: "#8b5cf6",
     status: "SHARING",
-    page: null,
+    page: "location",
   },
   {
     id: "reviews",
@@ -66,22 +54,9 @@ const features = [
     label: "Safety Reviews",
     color: "#00d4ff",
     status: "ONLINE",
-    page: null,
+    page: "safety-reviews",
   },
-  {
-    id: "fakecall",
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.65 3.18 2 2 0 0 1 3.63 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.81a16 16 0 0 0 6.29 6.29l.88-.88a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
-        <line x1="23" y1="1" x2="17" y2="7" />
-        <line x1="17" y1="1" x2="23" y2="7" />
-      </svg>
-    ),
-    label: "Fake Call",
-    color: "#f43f5e",
-    status: "READY",
-    page: null,
-  },
+
   {
     id: "route",
     icon: (
@@ -104,12 +79,12 @@ const features = [
     ),
     label: "Alert History",
     color: "#f59e0b",
-    status: "12 LOGS",
-    page: null,
+    status: "LOGS", // we will update this in render
+    page: "history",
   },
 ];
 
-export default function Home({ user, onLogout, navigate, contactCount, onSOS }) {
+export default function Home({ user, onLogout, navigate, contactCount, alertCount, onSOS }) {
   const [status, setStatus] = useState("safe");
   const [sosActive, setSosActive] = useState(false);
   const [sosCountdown, setSosCountdown] = useState(null);
@@ -232,8 +207,8 @@ export default function Home({ user, onLogout, navigate, contactCount, onSOS }) 
             <span className="stat-num" style={{ color: "#10b981" }}>98%</span>
             <span className="stat-label">Area Safety</span>
           </div>
-          <div className="stat-card">
-            <span className="stat-num" style={{ color: "#f59e0b" }}>12</span>
+          <div className="stat-card" style={{ cursor: "pointer" }} onClick={() => navigate("history")}>
+            <span className="stat-num" style={{ color: "#f59e0b" }}>{alertCount}</span>
             <span className="stat-label">Alerts Logged</span>
           </div>
         </div>
@@ -256,7 +231,7 @@ export default function Home({ user, onLogout, navigate, contactCount, onSOS }) 
               <div className="feature-icon" style={{ color: f.color }}>{f.icon}</div>
               <span className="feature-label">{f.label}</span>
               <span className="feature-status">
-                {f.id === "contacts" ? `${contactCount} SAVED` : f.status}
+                {f.id === "contacts" ? `${contactCount} SAVED` : f.id === "history" ? `${alertCount} LOGS` : f.status}
               </span>
               {f.page && <span className="feature-arrow">›</span>}
               <div className="feature-corner" />

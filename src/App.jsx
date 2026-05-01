@@ -3,6 +3,10 @@ import mqtt from "mqtt";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
 import Contacts from "./pages/Contacts";
+import AlertHistory from "./pages/AlertHistory";
+import SafetyReviews from "./pages/SafetyReviews";
+import LiveLocation from "./pages/LiveLocation";
+import VoiceTrigger from "./pages/VoiceTrigger";
 
 const defaultContacts = [
   { id: 1, name: "Sara Khan", phone: "+92 300 1234567", relation: "Sister" },
@@ -70,6 +74,20 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [contacts, setContacts] = useState(defaultContacts);
   const [incomingAlert, setIncomingAlert] = useState(null);
+  const [alertHistory, setAlertHistory] = useState(() => {
+    const saved = localStorage.getItem("alertHistory");
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const addAlertToHistory = (alertData) => {
+    setAlertHistory((prev) => {
+      // Avoid duplicate by ID
+      if (prev.some((a) => a.id === alertData.id)) return prev;
+      const updated = [alertData, ...prev];
+      localStorage.setItem("alertHistory", JSON.stringify(updated));
+      return updated;
+    });
+  };
 
   useEffect(() => {
     // Only listen for alerts if the user is logged in
@@ -93,6 +111,12 @@ export default function App() {
               message: data.message,
             });
             startAlarm();
+            addAlertToHistory({
+              id: data.id || Date.now() + Math.random(),
+              sender: data.sender,
+              message: data.message,
+              time: data.time || new Date().toISOString(),
+            });
           }
         } catch (error) {
           console.error("Error parsing MQTT message:", error);
@@ -122,13 +146,16 @@ export default function App() {
 
   const handleSOSTriggered = (sender) => {
     const alertData = {
+      id: Date.now().toString(),
       sender: sender,
       message: "Emergency! SOS Activated!",
+      time: new Date().toISOString(),
     };
 
     // Show alert locally
     setIncomingAlert(alertData);
     startAlarm();
+    addAlertToHistory(alertData);
 
     // Broadcast alert to other devices via MQTT
     if (mqttClient && mqttClient.connected) {
@@ -160,6 +187,7 @@ export default function App() {
           onLogout={handleLogout}
           navigate={navigate}
           contactCount={contacts.length}
+          alertCount={alertHistory.length}
           onSOS={handleSOSTriggered}
         />
       )}
@@ -169,6 +197,21 @@ export default function App() {
           setContacts={setContacts}
           navigate={navigate}
         />
+      )}
+      {currentPage === "history" && (
+        <AlertHistory
+          history={alertHistory}
+          navigate={navigate}
+        />
+      )}
+      {currentPage === "safety-reviews" && (
+        <SafetyReviews navigate={navigate} />
+      )}
+      {currentPage === "location" && (
+        <LiveLocation navigate={navigate} />
+      )}
+      {currentPage === "voice" && (
+        <VoiceTrigger navigate={navigate} user={user} onSOS={handleSOSTriggered} />
       )}
 
       {/* Global Emergency Alert Overlay */}
