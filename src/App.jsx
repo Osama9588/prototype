@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import mqtt from "mqtt";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
 import Contacts from "./pages/Contacts";
@@ -13,6 +14,7 @@ let audioCtx = null;
 let osc = null;
 let gainNode = null;
 let alarmInterval = null;
+let mqttClient = null;
 
 const startAlarm = () => {
   if (!audioCtx) {
@@ -73,20 +75,36 @@ export default function App() {
     // Only listen for alerts if the user is logged in
     if (currentPage === "login") return;
 
-    const channel = new BroadcastChannel("guardian-alert-channel");
-    channel.onmessage = (event) => {
-      if (event.data.type === "EMERGENCY_ALERT") {
-        setIncomingAlert({
-          sender: event.data.sender,
-          message: event.data.message,
-        });
-        startAlarm();
+    // Connect to a public MQTT broker for cross-device alerts
+    mqttClient = mqtt.connect("wss://broker.emqx.io:8083/mqtt");
+
+    mqttClient.on("connect", () => {
+      console.log("Connected to MQTT Broker");
+      mqttClient.subscribe("guardian-app-sos-alerts-dev");
+    });
+
+    mqttClient.on("message", (topic, message) => {
+      if (topic === "guardian-app-sos-alerts-dev") {
+        try {
+          const data = JSON.parse(message.toString());
+          if (data.type === "EMERGENCY_ALERT") {
+            setIncomingAlert({
+              sender: data.sender,
+              message: data.message,
+            });
+            startAlarm();
+          }
+        } catch (error) {
+          console.error("Error parsing MQTT message:", error);
+        }
       }
-    };
+    });
 
     return () => {
-      channel.close();
-      // Only stop alarm if we are unmounting or logging out
+      if (mqttClient) {
+        mqttClient.end();
+        mqttClient = null;
+      }
     };
   }, [currentPage]);
 
@@ -112,13 +130,23 @@ export default function App() {
     setIncomingAlert(alertData);
     startAlarm();
 
-    // Broadcast alert to other logged-in tabs
-    const channel = new BroadcastChannel("guardian-alert-channel");
-    channel.postMessage({
-      type: "EMERGENCY_ALERT",
-      ...alertData,
-    });
-    channel.close();
+    // Broadcast alert to other devices via MQTT
+    if (mqttClient && mqttClient.connected) {
+      mqttClient.publish("guardian-app-sos-alerts-dev", JSON.stringify({
+        type: "EMERGENCY_ALERT",
+        ...alertData,
+      }));
+    } else {
+      // Fallback: connect temporarily to publish if the main client isn't ready
+      const tempClient = mqtt.connect("wss://broker.emqx.io:8083/mqtt");
+      tempClient.on("connect", () => {
+        tempClient.publish("guardian-app-sos-alerts-dev", JSON.stringify({
+          type: "EMERGENCY_ALERT",
+          ...alertData,
+        }));
+        setTimeout(() => tempClient.end(), 1000);
+      });
+    }
   };
 
   const navigate = (page) => setCurrentPage(page);
