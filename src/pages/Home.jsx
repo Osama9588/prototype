@@ -109,7 +109,7 @@ const features = [
   },
 ];
 
-export default function Home({ user, onLogout, navigate, contactCount }) {
+export default function Home({ user, onLogout, navigate, contactCount, onSOS }) {
   const [status, setStatus] = useState("safe");
   const [sosActive, setSosActive] = useState(false);
   const [sosCountdown, setSosCountdown] = useState(null);
@@ -128,6 +128,11 @@ export default function Home({ user, onLogout, navigate, contactCount }) {
         clearInterval(interval);
         setSosCountdown(null);
         setStatus("atrisk");
+        
+        if (onSOS) {
+          onSOS(user);
+        }
+
         setTimeout(() => setSosActive(false), 2000);
       }
     }, 1000);
